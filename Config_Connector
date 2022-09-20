@@ -1,0 +1,50 @@
+import os
+import pandas as pd
+import json
+
+path = r'C:\Users\jblasius\OneDrive - Gainwell Technologies\Documents\VSCode\source'
+
+def list_files(dir):                                                                                                  
+    file_list = []                                                                                                            
+    subdirs = [x[0] for x in os.walk(dir)]                                                                            
+    for subdir in subdirs:                                                                                            
+        files = os.walk(subdir).__next__()[2]                                                                             
+        if (len(files) > 0):                                                                                          
+            for file in files:
+                if file.endswith('MergerConfig.json'):
+                    file_list.append(os.path.join(subdir, file))                                                                                                                                                                 
+    return file_list
+
+def get_main_files(file_path):
+    df_main = []
+    for file in file_path:
+        with open(file,'r') as f:
+            data = json.loads(f.read())
+            df = pd.json_normalize(data)
+            df['filepath'] = f.name
+            df['filepath'] = df['filepath'].str[75:]
+        df_main.append(df)
+    output = pd.concat(df_main).reset_index(drop = True)
+    temp_filepath = output['filepath']
+    output = output.drop(columns = ['filepath'])
+    output.insert(loc= 0, column= 'filepath', value= temp_filepath)
+    
+    return output
+
+def get_merge_files(file_path):
+    df_merge = []
+    for file in file_path:
+        with open(file,'r') as f:
+            data2 = json.loads(f.read())
+            df2 = pd.json_normalize(data2, record_path= ['merger.files'], meta = ['main.file.name.identifier'])
+        df_merge.append(df2)
+    output2 = pd.concat(df_merge).reset_index(drop = True)
+    return output2
+
+folders = list_files(path)
+mainfiles = get_main_files(folders)
+mainfiles.drop(['main.file.path.suffix','merger.files', 'main.file.delimiter', 'preprocess.file','main.file.name.delimiter'], axis = 1, inplace = True)
+mergefiles = get_merge_files(folders)
+mergefiles.drop(['merger.file.rename.fields', 'delimiter', 'file.path.suffix'], axis = 1, inplace = True)
+result = pd.merge(mainfiles, mergefiles, how = 'inner', on = 'main.file.name.identifier')
+result.to_csv('master_gio_config_list.csv')
