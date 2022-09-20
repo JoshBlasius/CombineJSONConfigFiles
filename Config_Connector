@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import json
 
-path = r'C:\Users\jblasius\OneDrive - Gainwell Technologies\Documents\VSCode\source'
+path = r''
 
 def list_files(dir):                                                                                                  
     file_list = []                                                                                                            
